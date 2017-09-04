@@ -1,6 +1,6 @@
-# remote-sync README
+# remotesync README
 
-This is the README for your extension "remote-sync". After writing up a brief description, we recommend including the following sections.
+This is the README for your extension "remotesync". After writing up a brief description, we recommend including the following sections.
 
 ## Features
 

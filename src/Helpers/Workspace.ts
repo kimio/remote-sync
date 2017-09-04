@@ -1,16 +1,28 @@
 'use strict';
 export class Workspace {
-  private errorWorkspaceFile =  'Your file doesn\'t has workspace';
-
-  public verify(vscode) {
-    var workspace = vscode.workspace.workspaceFolders;
+  private static readonly errorWorkspaceFile =  'Your file doesn\'t has workspace';
+  public vscode = null;
+  public constructor(vscode){
+    this.vscode = vscode;
+  }
+  public verify() {
+    var workspace = this.vscode.workspace.workspaceFolders;
     if (workspace === undefined) {
-      vscode.window.showErrorMessage(this.errorWorkspaceFile);
+      this.showError(Workspace.errorWorkspaceFile);
       return false;
     }
-    var worspacePath = vscode.workspace.workspaceFolders[0].uri.path
-    vscode.window.showInformationMessage(worspacePath);
+    var worspacePath = this.vscode.workspace.workspaceFolders[0].uri.path;
+    this.showMessage(worspacePath);
     return worspacePath;
   }
 
+  public createOutputChannel(outputChannel:string) {
+    return this.vscode.window.createOutputChannel(outputChannel);
+  }
+  public showError(errorMessage:string) {
+    this.vscode.window.showErrorMessage(errorMessage);
+  }
+  public showMessage(message:string) {
+    this.vscode.window.showInformationMessage(message);
+  }
 }

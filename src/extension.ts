@@ -1,20 +1,17 @@
 'use strict';
 import * as vscode from 'vscode';
 import {Workspace} from './Helpers/Workspace';
-
-var fs = require('fs');
+import {RemoteSync} from './Business/RemoteSync';
 export function activate(context: vscode.ExtensionContext) {
-  let disposable =
-      vscode.commands.registerCommand('extension.remoteSyncConfig', () => {
-        var code = new Workspace();
-        if (code.verify(vscode)) {
-          fs.readFile('.remoteSyncConfig', function(err, buf) {
-            if (err) {
-            } else {
-            }
-          });
-        }
-      });
-
+  // Config file
+  let disposable = vscode.commands.registerCommand('extension.remoteSyncConfig', () => {
+    var code = new Workspace(vscode);
+    //verify workspace
+    var workspaceAddress = code.verify();
+    if (workspaceAddress) {
+      var remoteSync = new RemoteSync(code);
+      remoteSync.configFile(workspaceAddress);
+    }
+  });
   context.subscriptions.push(disposable);
 }
