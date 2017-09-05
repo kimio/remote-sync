@@ -11,7 +11,8 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.remoteSyncConfig"
+        "onCommand:extension.remoteSyncConfig",
+        "onCommand:extension.remoteSyncSftpUpload"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -19,6 +20,10 @@
             {
                 "command": "extension.remoteSyncConfig",
                 "title": "Remote Sync: Config"
+            },
+            {
+                "command": "extension.remoteSyncSftpUpload",
+                "title": "Remote Sync: SFTP Upload"
             }
         ]
     },

@@ -6,11 +6,20 @@ export function activate(context: vscode.ExtensionContext) {
   // Config file
   let disposable = vscode.commands.registerCommand('extension.remoteSyncConfig', () => {
     var code = new Workspace(vscode);
-    //verify workspace
     var workspaceAddress = code.verify();
     if (workspaceAddress) {
       var remoteSync = new RemoteSync(code);
-      remoteSync.configFile(workspaceAddress);
+      remoteSync.configFile();
+    }
+  });
+  context.subscriptions.push(disposable);
+
+  disposable = vscode.commands.registerCommand('extension.remoteSyncSftpUpload', () => {
+    var code = new Workspace(vscode);
+    var workspaceAddress = code.verify();
+    if (workspaceAddress) {
+      var remoteSync = new RemoteSync(code);
+      remoteSync.uploadFile();
     }
   });
   context.subscriptions.push(disposable);

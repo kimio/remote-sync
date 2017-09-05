@@ -5,7 +5,7 @@ interface callback {
 }
 export class Terminal {
   public static command(command:string,callback:callback){
-    cmd.get(command,function(err, data, stderr){
+    cmd.get(command,(err, data, stderr) => {
       callback(err,data,stderr);
     });
   }

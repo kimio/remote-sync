@@ -2,6 +2,7 @@
 export class Workspace {
   private static readonly errorWorkspaceFile =  'Your file doesn\'t has workspace';
   public vscode = null;
+  public workspaceAddress = null;
   public constructor(vscode){
     this.vscode = vscode;
   }
@@ -11,9 +12,8 @@ export class Workspace {
       this.showError(Workspace.errorWorkspaceFile);
       return false;
     }
-    var worspacePath = this.vscode.workspace.workspaceFolders[0].uri.path;
-    this.showMessage(worspacePath);
-    return worspacePath;
+    this.workspaceAddress = this.vscode.workspace.workspaceFolders[0].uri.path;
+    return this.workspaceAddress;
   }
 
   public createOutputChannel(outputChannel:string) {
