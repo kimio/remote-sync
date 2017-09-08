@@ -1,83 +1,138 @@
 'use strinct'
 import{Terminal} from '../Helpers/Terminal';
 import {Workspace} from '../Helpers/Workspace';
-interface callback {
+interface CallbackFileAddress {
   (error: Error, fileAddress?: string): void;
+}
+interface CallbackObjectData {
+  (error: Error, data: any): void;
 }
 var ssh2 = require('ssh2');
 var fs = require('fs');
 var conn = null;
 
+export enum TypeOfConnection {
+  FTP,
+  SFTP
+}
 export class RemoteSync {
   private static readonly outputChannel = 'RemoteSync';
   private static readonly remoteFileNameConfig = '/.remoteSyncConfig';
   private static readonly errorMessage =
       'Error can\'t create new config file :(';
   private static readonly sucessMessage = 'Created new config file :)';
+  private static readonly preparingToUpload = 'Preparing to upload ';
+  private static readonly uploaded = ' Uploaded!';
+  private static readonly connected = ' Connected!';
   private static readonly remoteFileConfigBody =
-      '{\n"host":"",\n"port":21,\n"user":"",\n"password":""\n"initial_path":""\n}';
+      '{\n"host":"",\n"port":21,\n"username":"",\n"password":""\n"initial_path":""\n}';
   private static readonly errorMessageCodeNotFound = 'command code not found';
+  private static readonly errorMessageConnectionFailed = 'Connection Failed';
   private static readonly commandCode = 'code ';
   private code = null;
 
   public static logConsole = null;
   private remoteConfigFile = null;
+  private filesToUpload = null;
 
-  public constructor(code:Workspace) {
+  private remoteConfigurationJson = null;
+
+  public constructor(code: Workspace) {
     this.code = code;
     RemoteSync.logConsole =
         this.code.createOutputChannel(RemoteSync.outputChannel);
   }
-  public uploadFile() {
+  public uploadFile(isCurrentFile: boolean, typeOfConnection: TypeOfConnection):
+      void {
     this.remoteConnect();
+    this.getFilesToUpload(isCurrentFile);
+    switch (typeOfConnection) {
+      case TypeOfConnection.SFTP:
+        this.sftpUploadFile();
+        break;
+    }
+  }
 
+  private getFilesToUpload(isCurrentFile: boolean): void {
+    if (isCurrentFile) {
+      this.filesToUpload = [this.code.getCurrentFile()];
+      return;
+    }
+    this.filesToUpload = [];
+  }
+  private getPathFileToUpload(fileToUpload:string):string{
+    return fileToUpload.replace(this.code.workspacePath,"");
+  }
+  private sftpUploadFile(): void {
     conn.on('ready', () => {
+      this.code.showMessage(RemoteSync.connected);
       conn.sftp((err, sftp) => {
         if (err) {
-          console.log('Error, problem starting SFTP: %s', err);
+          this.code.showError(err);
+        } else {
+          
+          this.filesToUpload.forEach((item, index) => {
+            this.code.showMessage(RemoteSync.preparingToUpload+item);
+            var readStream = fs.createReadStream(item);
+            let initial_path = this.remoteConfigurationJson.initial_path; 
+            var writeStream = sftp.createWriteStream(initial_path+this.getPathFileToUpload(item));
+            writeStream.on('close', () => {
+              this.code.showMessage(item+RemoteSync.uploaded);
+              sftp.end();
+            });
+            readStream.pipe(writeStream);
+          });
+
         }
-
-        var readStream = fs.createReadStream('initial_path+workspaceAdress');
-        var writeStream = sftp.createWriteStream('file_adress');
-
-        writeStream.on('close',() => {
-          sftp.end();
-          process.exit(0);
-        });
-        readStream.pipe(writeStream);
       });
     });
   }
 
-  private remoteConnect() {
+  private remoteConnect(): void {
     conn = new ssh2();
-    if (this.remoteConfigFile) {
-      var remoteConfiguration = JSON.parse(fs.readFileSync(this.remoteConfigFile).toString());
-      conn.connect(remoteConfiguration);
-    } else {
-      this.code.showError('ERRO');
-    }
+    this.isConfigFileExist((err, data) => {
+      if (err) {
+        this.code.showError(RemoteSync.errorMessageConnectionFailed);
+      } else {
+        try {
+          this.remoteConfigurationJson = JSON.parse(data.toString());
+          conn.connect(this.remoteConfigurationJson);
+        } catch (e) {
+          this.code.showError(e.message);
+        }
+      }
+    });
   }
 
-  public configFile() {
-    this.createRemoteSyncConfig(this.code.workspaceAddress, (error: Error, fileAddress?: string): void => {
-          if (!error) {
-            this.remoteConfigFile = fileAddress;
-            // open config file
-            Terminal.command(
-                RemoteSync.commandCode + fileAddress,
-                function(error: Error, data, stderr) {
-                  if (error) {
-                    this.code.showError(RemoteSync.errorMessageCodeNotFound);
-                  }
-                });
-          }
-        });
+  public configFile(): void {
+    this.createRemoteSyncConfig((error: Error, fileAddress?: string): void => {
+      if (!error) {
+        // open config file
+        Terminal.command(
+          RemoteSync.commandCode + fileAddress,
+          function(error: Error, data, stderr) {
+            if (error) {
+              this.code.showError(RemoteSync.errorMessageCodeNotFound);
+            }
+          });
+      }
+    });
   }
 
-  private createRemoteSyncConfig(workspaceAddress: string, callback: callback):void {
-    var remoteConfigFile = workspaceAddress + RemoteSync.remoteFileNameConfig;
-    fs.readFile(remoteConfigFile, (err, buf) => {
+  private getRemoteConfigFile(): string {
+    return this.code.workspacePath + RemoteSync.remoteFileNameConfig;
+  }
+
+  // Config File Exist
+  private isConfigFileExist(callback: CallbackObjectData): void {
+    fs.readFile(this.getRemoteConfigFile(), (err, buf) => {
+      callback(err, buf);
+    });
+  }
+
+  private createRemoteSyncConfig(callback: CallbackFileAddress): void {
+    var remoteConfigFile = this.getRemoteConfigFile();
+    this.isConfigFileExist((err, buf) => {
       if (err) {
         fs.writeFile(
             remoteConfigFile, RemoteSync.remoteFileConfigBody, (err) => {

@@ -2,7 +2,7 @@
 export class Workspace {
   private static readonly errorWorkspaceFile =  'Your file doesn\'t has workspace';
   public vscode = null;
-  public workspaceAddress = null;
+  public workspacePath = null;
   public constructor(vscode){
     this.vscode = vscode;
   }
@@ -12,10 +12,12 @@ export class Workspace {
       this.showError(Workspace.errorWorkspaceFile);
       return false;
     }
-    this.workspaceAddress = this.vscode.workspace.workspaceFolders[0].uri.path;
-    return this.workspaceAddress;
+    this.workspacePath = this.vscode.workspace.workspaceFolders[0].uri.path;
+    return this.workspacePath;
   }
-
+  public getCurrentFile():string{
+    return this.vscode.window.activeTextEditor.document.fileName;
+  }
   public createOutputChannel(outputChannel:string) {
     return this.vscode.window.createOutputChannel(outputChannel);
   }

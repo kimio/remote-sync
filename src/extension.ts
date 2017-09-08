@@ -1,7 +1,7 @@
 'use strict';
 import * as vscode from 'vscode';
 import {Workspace} from './Helpers/Workspace';
-import {RemoteSync} from './Business/RemoteSync';
+import {RemoteSync,TypeOfConnection} from './Business/RemoteSync';
 export function activate(context: vscode.ExtensionContext) {
   // Config file
   let disposable = vscode.commands.registerCommand('extension.remoteSyncConfig', () => {
@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
     var workspaceAddress = code.verify();
     if (workspaceAddress) {
       var remoteSync = new RemoteSync(code);
-      remoteSync.uploadFile();
+      remoteSync.uploadFile(true,TypeOfConnection.SFTP);
     }
   });
   context.subscriptions.push(disposable);
