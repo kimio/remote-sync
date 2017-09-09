@@ -41,6 +41,7 @@
         "vscode": "^1.1.5"
     },
     "dependencies": {
+        "eslint": "^4.6.1",
         "node-cmd": "^3.0.0",
         "ssh2": "^0.5.5"
     }

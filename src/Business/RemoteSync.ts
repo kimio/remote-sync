@@ -25,7 +25,7 @@ export class RemoteSync {
   private static readonly uploaded = ' Uploaded!';
   private static readonly connected = ' Connected!';
   private static readonly remoteFileConfigBody =
-      '{\n"host":"",\n"port":21,\n"username":"",\n"password":""\n"initial_path":""\n}';
+      '{\n"host":"",\n"port":21,\n"username":"",\n"password":""\n"initial_path":""\n"permission":755\n}';
   private static readonly errorMessageCodeNotFound = 'command code not found';
   private static readonly errorMessageConnectionFailed = 'Connection Failed';
   private static readonly commandCode = 'code ';
@@ -42,6 +42,7 @@ export class RemoteSync {
     RemoteSync.logConsole =
         this.code.createOutputChannel(RemoteSync.outputChannel);
   }
+
   public uploadFile(isCurrentFile: boolean, typeOfConnection: TypeOfConnection):
       void {
     this.remoteConnect();
@@ -60,9 +61,11 @@ export class RemoteSync {
     }
     this.filesToUpload = [];
   }
+
   private getPathFileToUpload(fileToUpload:string):string{
     return fileToUpload.replace(this.code.workspacePath,"");
   }
+
   private sftpUploadFile(): void {
     conn.on('ready', () => {
       this.code.showMessage(RemoteSync.connected);
@@ -78,7 +81,9 @@ export class RemoteSync {
             var writeStream = sftp.createWriteStream(initial_path+this.getPathFileToUpload(item));
             writeStream.on('close', () => {
               this.code.showMessage(item+RemoteSync.uploaded);
-              sftp.end();
+              this.updatePermission(sftp,initial_path+this.getPathFileToUpload(item),(err,sucess)=>{
+                sftp.end();
+              });
             });
             readStream.pipe(writeStream);
           });
@@ -86,6 +91,24 @@ export class RemoteSync {
         }
       });
     });
+  }
+
+  private updatePermission(sftp:any,fileAdress:string,callback):void{
+    if(this.remoteConfigurationJson.permission>0){
+      sftp.chmod(fileAdress, this.remoteConfigurationJson.permission, (err) =>{
+        if ( err ) {
+            console.log( "Error, problem starting SFTP: %s", err );
+            callback(err,null);
+        }
+        else
+        {
+            console.log( "Mode changed" );
+            callback(null,true);
+        }
+      });
+    }else{
+      callback(null,true);
+    }
   }
 
   private remoteConnect(): void {
